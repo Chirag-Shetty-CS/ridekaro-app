@@ -1,0 +1,106 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# IntelliJ
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Flutter/Dart packages
+.dart_tool/
+.packages
+build/
+pubspec.lock # We want to track this in some projects, but ignore for libraries.
+
+# Secret files
+secrets.json
+local.properties
+
+# Android build files
+android/app/google-services.json
+android/key.properties
+android/local.properties
+android/.gradle/
+android/app/build/
+android/build/
+*.jks
+
+# iOS build files
+ios/Pods/
+ios/Runner/GoogleService-Info.plist
+ios/Runner.xcworkspace/
+ios/Runner.xcodeproj/project.xcworkspace/
+ios/Runner.xcodeproj/xcuserdata/
+ios/.symlinks/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+
+# VS Code
+.vscode/
+```
+
+### ## Step 5: Save Your First Snapshot (Commit)
+
+Now we'll take the first "snapshot" of your working project.
+
+1.  **Stage Your Files:** In your terminal, run:
+    ```bash
+    git add .
+    ```
+    This command means "Get all my project files ready to be saved."
+
+2.  **Commit Your Files:** Now, run:
+    ```bash
+    git commit -m "Initial commit: Project is working"
+    ```
+    This command takes the snapshot and gives it a descriptive label. You've now officially saved your first version!
+
+### ## Step 6: Connect to GitHub and Upload
+
+Finally, let's connect your local project to the GitHub repository you created and upload your snapshot.
+
+1.  **Go to your GitHub repository page.** You will see a URL under the "Quick setup" section. Copy the HTTPS URL. It will look like `https://github.com/your-username/ridekaro_app.git`.
+
+2.  **Connect to GitHub:** In your terminal, run this command, pasting your repository's URL at the end:
+    ```bash
+    git remote add origin https://github.com/your-username/ridekaro_app.git
+    ```
+
+3.  **Upload (Push) Your Code:** Run this final command to upload your first commit:
+    ```bash
+    git push -u origin master
+    ```
+    (Note: Your default branch might be called `main` instead of `master`. If it is, use `git push -u origin main`).
+
+---
+### ## Your New "AI Safety Net" Workflow
+
+Now, before you let an AI make any changes, your workflow is simple:
+
+1.  **Save your current work:**
+    ```bash
+    git add .
+    git commit -m "Saving my work before trying an AI suggestion"
+    ```
+
+2.  **Let the AI make its changes.**
+
+3.  **Check the result:**
+    * **If the AI broke your project:** Simply run this command to instantly revert all changes and go back to your last saved snapshot:
+        ```bash
+        git restore .
+        ```
+    * **If the AI's changes worked:** Save this new, successful version!
+        ```bash
+        git add .
+        git commit -m "Successfully implemented the new feature with AI"
+        
