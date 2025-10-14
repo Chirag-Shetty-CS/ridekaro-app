@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -13,6 +12,7 @@ class RideRequest {
   final String dropLocation;
   final String fare;
   final LatLng pickupCoords;
+  final LatLng dropCoords;
 
   RideRequest({
     required this.riderName,
@@ -20,6 +20,7 @@ class RideRequest {
     required this.dropLocation,
     required this.fare,
     required this.pickupCoords,
+    required this.dropCoords,
   });
 }
 
@@ -53,6 +54,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       dropLocation: 'Phoenix Marketcity',
       fare: '₹120',
       pickupCoords: const LatLng(19.0681, 72.8863),
+      dropCoords: const LatLng(19.08532, 72.88905), // Phoenix Marketcity
     ),
     RideRequest(
       riderName: 'Priya Mehta',
@@ -60,6 +62,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       dropLocation: 'R City Mall',
       fare: '₹95',
       pickupCoords: const LatLng(19.0850, 72.9090),
+      dropCoords: const LatLng(19.0992, 72.91697), // R City Mall
     ),
     RideRequest(
       riderName: 'Ankit Desai',
@@ -67,6 +70,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       dropLocation: 'Juhu Beach',
       fare: '₹150',
       pickupCoords: const LatLng(19.0560, 72.8290),
+      dropCoords: const LatLng(19.0400, 72.8200), // Juhu Beach
     ),
   ];
 
@@ -100,7 +104,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         ),
       ));
     } catch (e) {
-      debugPrint("Error getting current location: $e");
+      // Silently handle location errors
     }
   }
 
@@ -119,47 +123,17 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     );
   }
 
-  // Test method to verify markers are working
-  void _testMarkers() {
-    debugPrint("=== Testing markers ===");
-    setState(() {
-      _markers.clear();
-      _polylines.clear();
-
-      // Add a test marker at Mumbai center
-      _markers.add(
-        Marker(
-          markerId: const MarkerId('test_marker'),
-          position: const LatLng(19.0760, 72.8777),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: const InfoWindow(title: 'Test Marker'),
-        ),
-      );
-
-      debugPrint("Added test marker. Total markers: ${_markers.length}");
-    });
-  }
-
-  // --- This function now correctly handles plotting ---
+  // --- This function handles plotting the complete route ---
   Future<void> _onRideRequestSelected(RideRequest request) async {
-    debugPrint("=== Starting ride request selection ===");
-    debugPrint("Selected request: ${request.riderName}");
-    debugPrint("Pickup location: ${request.pickupLocation}");
-    debugPrint("Pickup coordinates: ${request.pickupCoords}");
-
     try {
       // Get the driver's current location
-      debugPrint("Getting driver's current location...");
       Position driverPosition = await Geolocator.getCurrentPosition();
       LatLng driverCoords =
           LatLng(driverPosition.latitude, driverPosition.longitude);
-      debugPrint("Driver coordinates: $driverCoords");
 
-      // Get the route from driver to pickup
-      debugPrint("Calculating route from driver to pickup...");
-      debugPrint("Using API key: ${_googleMapsApiKey.substring(0, 10)}...");
-
-      PolylineResult result = await _polylinePoints.getRouteBetweenCoordinates(
+      // Calculate route from driver to pickup
+      PolylineResult pickupResult =
+          await _polylinePoints.getRouteBetweenCoordinates(
         _googleMapsApiKey,
         PointLatLng(driverCoords.latitude, driverCoords.longitude),
         PointLatLng(
@@ -167,34 +141,23 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         travelMode: TravelMode.driving,
       );
 
-      debugPrint("Polyline result status: ${result.status}");
-      debugPrint("Polyline points count: ${result.points.length}");
-      debugPrint("Polyline error message: ${result.errorMessage}");
-
-      List<LatLng> polylineCoordinates = [];
-
-      if (result.points.isEmpty) {
-        debugPrint("No polyline points received, using fallback straight line");
-        polylineCoordinates = [driverCoords, request.pickupCoords];
-      } else {
-        polylineCoordinates = result.points
-            .map((point) => LatLng(point.latitude, point.longitude))
-            .toList();
-        debugPrint("Polyline coordinates count: ${polylineCoordinates.length}");
-        debugPrint(
-            "First few coordinates: ${polylineCoordinates.take(3).toList()}");
-      }
+      // Calculate route from pickup to drop
+      PolylineResult dropResult =
+          await _polylinePoints.getRouteBetweenCoordinates(
+        _googleMapsApiKey,
+        PointLatLng(
+            request.pickupCoords.latitude, request.pickupCoords.longitude),
+        PointLatLng(request.dropCoords.latitude, request.dropCoords.longitude),
+        travelMode: TravelMode.driving,
+      );
 
       if (mounted) {
-        debugPrint("Widget is mounted, updating state...");
         setState(() {
-          // 1. CLEAR old markers and polylines
-          debugPrint("Clearing old markers and polylines...");
+          // Clear old markers and polylines
           _markers.clear();
           _polylines.clear();
 
-          // 2. PLOT new driver and pickup markers
-          debugPrint("Adding driver marker at: $driverCoords");
+          // Add driver marker
           _markers.add(
             Marker(
               markerId: const MarkerId('driver'),
@@ -205,10 +168,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
             ),
           );
 
-          debugPrint("Adding pickup marker at: ${request.pickupCoords}");
+          // Add pickup marker
           _markers.add(
             Marker(
-              markerId: MarkerId(request.riderName), // Use a unique ID
+              markerId: MarkerId('pickup_${request.riderName}'),
               position: request.pickupCoords,
               icon: BitmapDescriptor.defaultMarkerWithHue(
                   BitmapDescriptor.hueYellow),
@@ -219,40 +182,78 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
             ),
           );
 
-          // 3. PLOT new route polyline
-          debugPrint(
-              "Adding polyline with ${polylineCoordinates.length} points");
-          _polylines.add(
-            Polyline(
-              polylineId: const PolylineId('route_to_pickup'),
-              points: polylineCoordinates,
-              color: result.points.isEmpty
-                  ? const Color(0xFFFF6B6B)
-                  : const Color(0xFFFFD700),
-              width: result.points.isEmpty ? 3 : 5,
-              patterns: result.points.isEmpty
-                  ? [PatternItem.dash(20), PatternItem.gap(10)]
-                  : [],
+          // Add drop marker
+          _markers.add(
+            Marker(
+              markerId: MarkerId('drop_${request.riderName}'),
+              position: request.dropCoords,
+              icon: BitmapDescriptor.defaultMarkerWithHue(
+                  BitmapDescriptor.hueRed),
+              infoWindow: InfoWindow(
+                title: 'Drop: ${request.riderName}',
+                snippet: request.dropLocation,
+              ),
             ),
           );
 
-          debugPrint("Final markers count: ${_markers.length}");
-          debugPrint("Final polylines count: ${_polylines.length}");
+          // Plot route from driver to pickup
+          if (pickupResult.points.isNotEmpty) {
+            List<LatLng> pickupRoute = pickupResult.points
+                .map((point) => LatLng(point.latitude, point.longitude))
+                .toList();
+
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('route_to_pickup'),
+                points: pickupRoute,
+                color: const Color(0xFF4CAF50), // Green for pickup route
+                width: 5,
+              ),
+            );
+          } else {
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('route_to_pickup'),
+                points: [driverCoords, request.pickupCoords],
+                color: const Color(0xFF4CAF50),
+                width: 3,
+                patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+              ),
+            );
+          }
+
+          // Plot route from pickup to drop
+          if (dropResult.points.isNotEmpty) {
+            List<LatLng> dropRoute = dropResult.points
+                .map((point) => LatLng(point.latitude, point.longitude))
+                .toList();
+
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('route_to_drop'),
+                points: dropRoute,
+                color: const Color(0xFFFF6B6B), // Red for drop route
+                width: 5,
+              ),
+            );
+          } else {
+            _polylines.add(
+              Polyline(
+                polylineId: const PolylineId('route_to_drop'),
+                points: [request.pickupCoords, request.dropCoords],
+                color: const Color(0xFFFF6B6B),
+                width: 3,
+                patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+              ),
+            );
+          }
         });
-      } else {
-        debugPrint("Widget is not mounted, skipping state update");
       }
 
-      // 4. ANIMATE camera to fit the new route
-      debugPrint("Animating camera to fit route...");
-      await _animateCameraToFitRoute(driverCoords, request.pickupCoords);
-      debugPrint("=== Ride request selection completed successfully ===");
+      // Animate camera to fit all points
+      await _animateCameraToFitAllPoints(
+          driverCoords, request.pickupCoords, request.dropCoords);
     } catch (e) {
-      debugPrint("=== ERROR in ride request selection ===");
-      debugPrint("Error type: ${e.runtimeType}");
-      debugPrint("Error message: $e");
-      debugPrint("Stack trace: ${StackTrace.current}");
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text("Error plotting route: $e"),
@@ -263,22 +264,29 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     }
   }
 
-  Future<void> _animateCameraToFitRoute(LatLng point1, LatLng point2) async {
+  Future<void> _animateCameraToFitAllPoints(
+      LatLng driver, LatLng pickup, LatLng drop) async {
     try {
-      debugPrint("Animating camera to fit route between $point1 and $point2");
       final GoogleMapController controller = await _controller.future;
+
+      // Find the bounds that include all three points
+      double minLat = [driver.latitude, pickup.latitude, drop.latitude]
+          .reduce((a, b) => a < b ? a : b);
+      double maxLat = [driver.latitude, pickup.latitude, drop.latitude]
+          .reduce((a, b) => a > b ? a : b);
+      double minLng = [driver.longitude, pickup.longitude, drop.longitude]
+          .reduce((a, b) => a < b ? a : b);
+      double maxLng = [driver.longitude, pickup.longitude, drop.longitude]
+          .reduce((a, b) => a > b ? a : b);
+
       LatLngBounds bounds = LatLngBounds(
-        southwest: LatLng(min(point1.latitude, point2.latitude),
-            min(point1.longitude, point2.longitude)),
-        northeast: LatLng(max(point1.latitude, point2.latitude),
-            max(point1.longitude, point2.longitude)),
+        southwest: LatLng(minLat, minLng),
+        northeast: LatLng(maxLat, maxLng),
       );
-      debugPrint("Camera bounds: $bounds");
       await controller
-          .animateCamera(CameraUpdate.newLatLngBounds(bounds, 100.0));
-      debugPrint("Camera animation completed");
+          .animateCamera(CameraUpdate.newLatLngBounds(bounds, 150.0));
     } catch (e) {
-      debugPrint("Error animating camera: $e");
+      // Silently handle camera animation errors
     }
   }
 
@@ -290,11 +298,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         backgroundColor: const Color(0xFF1C1C1C),
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.bug_report, color: Color(0xFFFFD700)),
-            onPressed: _testMarkers,
-            tooltip: 'Test Markers',
-          ),
           IconButton(
             icon: const Icon(Icons.person, color: Color(0xFFFFD700)),
             onPressed: () {
