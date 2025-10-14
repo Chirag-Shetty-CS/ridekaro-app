@@ -136,6 +136,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFFFD700), // Taxi Yellow
+                          width: 2.0,
+                        ),
+                      ),
                     ),
                     keyboardType: TextInputType.phone,
                     inputFormatters: [

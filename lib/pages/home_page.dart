@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/places_search_widget.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -71,19 +72,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showPermissionDialog() {
+    // Ensure context is available before showing a dialog
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
         backgroundColor: const Color(0xFF2E2E2E),
-        title: const Text('Location Permission Required', style: TextStyle(color: Colors.white)),
-        content: const Text('This app needs location access to show your position on the map. Please enable it in your device settings.', style: TextStyle(color: Colors.white70)),
+        title: Text(l10n.locationPermissionRequired, style: const TextStyle(color: Colors.white)),
+        content: Text(l10n.locationPermissionMessage, style: const TextStyle(color: Colors.white70)),
         actions: <Widget>[
           TextButton(
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            child: Text(l10n.cancel, style: const TextStyle(color: Colors.white70)),
             onPressed: () => Navigator.of(context).pop(),
           ),
           TextButton(
-            child: const Text('Open Settings', style: TextStyle(color: Color(0xFFFFD700))),
+            child: Text(l10n.openSettings, style: const TextStyle(color: Color(0xFFFFD700))),
             onPressed: () {
               openAppSettings();
               Navigator.of(context).pop();
@@ -117,10 +121,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onSubmitRide() async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     if (_pickupLatLng == null || _dropLatLng == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please select both pickup and drop locations.')),
+        SnackBar(content: Text(l10n.selectPickupAndDrop)),
       );
       return;
     }
@@ -151,13 +156,13 @@ class _HomeScreenState extends State<HomeScreen> {
               position: pickupPoint,
               icon: _pickupIcon,
               infoWindow:
-              InfoWindow(title: 'Pickup', snippet: _pickupController.text)),
+              InfoWindow(title: l10n.pickup, snippet: _pickupController.text)),
           Marker(
               markerId: const MarkerId('drop'),
               position: dropPoint,
               icon: _dropIcon,
               infoWindow:
-              InfoWindow(title: 'Drop', snippet: _dropController.text)),
+              InfoWindow(title: l10n.drop, snippet: _dropController.text)),
         };
         _polylines = {
           Polyline(
@@ -171,10 +176,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _animateCameraToFitRoute(pickupPoint, dropPoint);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error: ${e.toString().replaceAll("Exception: ", "")}')));
+          content: Text(l10n.error(e.toString().replaceAll("Exception: ", ""))))
+      );
     } finally {
-      setState(() => _isLoading = false);
+      if(mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -189,27 +196,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ride Karo'),
+        title: Text(l10n.appName),
         backgroundColor: const Color(0xFF1C1C1C),
         automaticallyImplyLeading: false,
-        // --- THIS IS THE NEW CODE ---
         actions: [
           IconButton(
             icon: const Icon(Icons.person, color: Color(0xFFFFD700)),
             onPressed: () {
-              // Navigate to the account page
               Navigator.of(context).pushNamed('/account');
             },
           ),
         ],
-        // --- END OF NEW CODE ---
       ),
       body: Column(
         children: [
           Flexible(
-            flex: 6,
+            flex: 5, // Changed from 6 to 5
             child: GoogleMap(
               onMapCreated: _onMapCreated,
               initialCameraPosition: _initialPosition,
@@ -221,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Flexible(
-            flex: 4,
+            flex: 5, // Changed from 4 to 5
             child: Container(
               decoration: const BoxDecoration(
                 color: Color(0xFF2E2E2E),
@@ -243,13 +248,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _buildLocationTextField(
                         controller: _pickupController,
-                        hint: 'Search Pickup Location',
+                        hint: l10n.searchPickupLocation,
                         icon: Icons.my_location,
                         isPickup: true),
                     const SizedBox(height: 16),
                     _buildLocationTextField(
                         controller: _dropController,
-                        hint: 'Search Drop Location',
+                        hint: l10n.searchDropLocation,
                         icon: Icons.location_on,
                         isPickup: false),
                     const SizedBox(height: 24),
@@ -321,13 +326,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildVehicleSelector() {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildVehicleButton('small_car', Icons.directions_car, 'Small'),
-        _buildVehicleButton('big_car', Icons.directions_car_filled, 'Large'),
-        _buildVehicleButton('auto', Icons.electric_rickshaw, 'Auto'),
-        _buildVehicleButton('bike', Icons.two_wheeler, 'Bike'),
+        _buildVehicleButton('small_car', Icons.directions_car, l10n.smallCar),
+        _buildVehicleButton('big_car', Icons.directions_car_filled, l10n.largeCar),
+        _buildVehicleButton('auto', Icons.electric_rickshaw, l10n.auto),
+        _buildVehicleButton('bike', Icons.two_wheeler, l10n.bike),
       ],
     );
   }
@@ -371,6 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSubmitButton() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -394,9 +401,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ? const CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1C1C1C)),
         )
-            : const Text(
-          'Request Ride',
-          style: TextStyle(
+            : Text(
+          l10n.requestRide,
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Color(0xFF1C1C1C),
@@ -406,4 +413,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-

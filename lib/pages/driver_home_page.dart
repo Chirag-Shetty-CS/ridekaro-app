@@ -4,6 +4,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import '../l10n/app_localizations.dart';
+
 
 // A model for a ride request to keep the code clean
 class RideRequest {
@@ -115,10 +117,11 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   }
 
   void _acceptRide(RideRequest request) {
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: const Color(0xFF4CAF50),
-        content: Text('Accepted ride from ${request.riderName}!'),
+        content: Text(l10n.acceptedRideFrom(request.riderName)),
       ),
     );
   }
@@ -158,13 +161,14 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           _polylines.clear();
 
           // Add driver marker
+          final l10n = AppLocalizations.of(context)!;
           _markers.add(
             Marker(
               markerId: const MarkerId('driver'),
               position: driverCoords,
               icon: BitmapDescriptor.defaultMarkerWithHue(
                   BitmapDescriptor.hueAzure),
-              infoWindow: const InfoWindow(title: 'Your Location'),
+              infoWindow: InfoWindow(title: l10n.yourLocation),
             ),
           );
 
@@ -176,7 +180,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               icon: BitmapDescriptor.defaultMarkerWithHue(
                   BitmapDescriptor.hueYellow),
               infoWindow: InfoWindow(
-                title: 'Pickup: ${request.riderName}',
+                title: '${l10n.pickup}: ${request.riderName}',
                 snippet: request.pickupLocation,
               ),
             ),
@@ -190,7 +194,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               icon: BitmapDescriptor.defaultMarkerWithHue(
                   BitmapDescriptor.hueRed),
               infoWindow: InfoWindow(
-                title: 'Drop: ${request.riderName}',
+                title: '${l10n.drop}: ${request.riderName}',
                 snippet: request.dropLocation,
               ),
             ),
@@ -255,8 +259,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           driverCoords, request.pickupCoords, request.dropCoords);
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Error plotting route: $e"),
+          content: Text(l10n.errorPlottingRoute(e.toString())),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 5),
         ));
@@ -292,9 +297,11 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ride Karo (Driver)'),
+        title: Text('${l10n.appName} (${l10n.driver})'),
         backgroundColor: const Color(0xFF1C1C1C),
         automaticallyImplyLeading: false,
         actions: [
@@ -337,11 +344,11 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               ),
               child: Column(
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
                     child: Text(
-                      'Nearby Ride Requests',
-                      style: TextStyle(
+                      l10n.nearbyRideRequests,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -351,10 +358,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                   const Divider(color: Colors.white24, height: 1),
                   Expanded(
                     child: _rideRequests.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text(
-                              'No ride requests nearby.',
-                              style: TextStyle(
+                              l10n.noRideRequestsNearby,
+                              style: const TextStyle(
                                   color: Colors.white70, fontSize: 16),
                             ),
                           )
@@ -375,13 +382,13 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                                   leading: const Icon(Icons.person_pin_circle,
                                       color: Color(0xFFFFD700), size: 32),
                                   title: Text(
-                                    'From: ${request.pickupLocation}',
+                                    '${l10n.from}: ${request.pickupLocation}',
                                     style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold),
                                   ),
                                   subtitle: Text(
-                                    'To: ${request.dropLocation}\nFare: ${request.fare}',
+                                    '${l10n.to}: ${request.dropLocation}\n${l10n.fare}: ${request.fare}',
                                     style:
                                         const TextStyle(color: Colors.white70),
                                   ),
@@ -394,7 +401,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),
-                                    child: const Text('Accept'),
+                                    child: Text(l10n.accept),
                                   ),
                                 ),
                               );
