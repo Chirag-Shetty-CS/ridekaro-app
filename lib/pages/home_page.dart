@@ -40,20 +40,20 @@ class _HomeScreenState extends State<HomeScreen> {
   BitmapDescriptor _pickupIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor _dropIcon = BitmapDescriptor.defaultMarker;
 
-  // --- Polyline Logic ---
-  late final PolylinePoints _polylinePoints;
+  final PolylinePoints _polylinePoints = PolylinePoints();
 
   @override
   void initState() {
     super.initState();
     _setCustomMarkerIcons();
     _handleLocationPermission();
-    _polylinePoints = PolylinePoints(apiKey: _googleMapsApiKey);
   }
 
   void _setCustomMarkerIcons() {
-    _pickupIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
-    _dropIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+    _pickupIcon =
+        BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+    _dropIcon =
+        BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
   }
 
   Future<void> _handleLocationPermission() async {
@@ -76,10 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (BuildContext context) => AlertDialog(
         backgroundColor: const Color(0xFF2E2E2E),
         title: const Text('Location Permission Required', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'This app needs location access to show your position on the map. Please enable it in your device settings.',
-          style: TextStyle(color: Colors.white70),
-        ),
+        content: const Text('This app needs location access to show your position on the map. Please enable it in your device settings.', style: TextStyle(color: Colors.white70)),
         actions: <Widget>[
           TextButton(
             child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
@@ -99,7 +96,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _goToCurrentUserLocation() async {
     try {
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
       final GoogleMapController controller = await _controller.future;
       controller.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(
@@ -121,7 +119,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _onSubmitRide() async {
     if (_pickupLatLng == null || _dropLatLng == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select both pickup and drop locations.')),
+        const SnackBar(
+            content: Text('Please select both pickup and drop locations.')),
       );
       return;
     }
@@ -131,16 +130,16 @@ class _HomeScreenState extends State<HomeScreen> {
       final dropPoint = _dropLatLng!;
 
       PolylineResult result = await _polylinePoints.getRouteBetweenCoordinates(
-        request: PolylineRequest(
-          origin: PointLatLng(pickupPoint.latitude, pickupPoint.longitude),
-          destination: PointLatLng(dropPoint.latitude, dropPoint.longitude),
-          mode: TravelMode.driving,
-        ),
+        _googleMapsApiKey,
+        PointLatLng(pickupPoint.latitude, pickupPoint.longitude),
+        PointLatLng(dropPoint.latitude, dropPoint.longitude),
+        travelMode: TravelMode.driving,
       );
 
       List<LatLng> polylineCoordinates = [];
       if (result.points.isNotEmpty) {
-        polylineCoordinates.addAll(result.points.map((point) => LatLng(point.latitude, point.longitude)));
+        polylineCoordinates.addAll(result.points
+            .map((point) => LatLng(point.latitude, point.longitude)));
       } else {
         throw Exception(result.errorMessage ?? 'Could not calculate a route.');
       }
@@ -148,17 +147,17 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _markers = {
           Marker(
-            markerId: const MarkerId('pickup'),
-            position: pickupPoint,
-            icon: _pickupIcon,
-            infoWindow: InfoWindow(title: 'Pickup', snippet: _pickupController.text),
-          ),
+              markerId: const MarkerId('pickup'),
+              position: pickupPoint,
+              icon: _pickupIcon,
+              infoWindow:
+              InfoWindow(title: 'Pickup', snippet: _pickupController.text)),
           Marker(
-            markerId: const MarkerId('drop'),
-            position: dropPoint,
-            icon: _dropIcon,
-            infoWindow: InfoWindow(title: 'Drop', snippet: _dropController.text),
-          ),
+              markerId: const MarkerId('drop'),
+              position: dropPoint,
+              icon: _dropIcon,
+              infoWindow:
+              InfoWindow(title: 'Drop', snippet: _dropController.text)),
         };
         _polylines = {
           Polyline(
@@ -172,9 +171,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _animateCameraToFitRoute(pickupPoint, dropPoint);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString().replaceAll("Exception: ", "")}')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error: ${e.toString().replaceAll("Exception: ", "")}')));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -196,6 +194,17 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Ride Karo'),
         backgroundColor: const Color(0xFF1C1C1C),
         automaticallyImplyLeading: false,
+        // --- THIS IS THE NEW CODE ---
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person, color: Color(0xFFFFD700)),
+            onPressed: () {
+              // Navigate to the account page
+              Navigator.of(context).pushNamed('/account');
+            },
+          ),
+        ],
+        // --- END OF NEW CODE ---
       ),
       body: Column(
         children: [
@@ -220,26 +229,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   topLeft: Radius.circular(24),
                   topRight: Radius.circular(24),
                 ),
-                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 15, offset: Offset(0, -4))],
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 15,
+                      offset: Offset(0, -4))
+                ],
               ),
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildLocationTextField(
-                      controller: _pickupController,
-                      hint: 'Enter Pickup Location',
-                      icon: Icons.my_location,
-                      isPickup: true,
-                    ),
+                        controller: _pickupController,
+                        hint: 'Search Pickup Location',
+                        icon: Icons.my_location,
+                        isPickup: true),
+                    const SizedBox(height: 16),
                     _buildLocationTextField(
-                      controller: _dropController,
-                      hint: 'Enter Drop Location',
-                      icon: Icons.location_on,
-                      isPickup: false,
-                    ),
+                        controller: _dropController,
+                        hint: 'Search Drop Location',
+                        icon: Icons.location_on,
+                        isPickup: false),
+                    const SizedBox(height: 24),
                     _buildVehicleSelector(),
+                    const SizedBox(height: 24),
                     _buildSubmitButton(),
                   ],
                 ),
@@ -280,27 +295,26 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showPlacesSearch(bool isPickup) {
-    final parentContext = context; // store parent context before opening sheet
-
+    final navigator = Navigator.of(context);
     showModalBottomSheet(
-      context: parentContext,
+      context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) => PlacesSearchWidget(
+      builder: (context) => PlacesSearchWidget(
         apiKey: _googleMapsApiKey,
         onPlaceSelected: (String address, LatLng coordinates) {
-          setState(() {
-            if (isPickup) {
-              _pickupController.text = address;
-              _pickupLatLng = coordinates;
-            } else {
-              _dropController.text = address;
-              _dropLatLng = coordinates;
-            }
-          });
-
-          // Pop using parent context to close sheet safely
-          Navigator.of(parentContext).pop();
+          if (mounted) {
+            setState(() {
+              if (isPickup) {
+                _pickupController.text = address;
+                _pickupLatLng = coordinates;
+              } else {
+                _dropController.text = address;
+                _dropLatLng = coordinates;
+              }
+            });
+          }
+          navigator.pop();
         },
       ),
     );
@@ -321,13 +335,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildVehicleButton(String vehicleType, IconData icon, String label) {
     final bool isSelected = _selectedVehicle == vehicleType;
     return GestureDetector(
-      onTap: () => setState(() => _selectedVehicle = vehicleType),
+      onTap: () {
+        if(mounted) setState(() => _selectedVehicle = vehicleType);
+      },
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFFFFD700) : Colors.black.withOpacity(0.3),
+              color: isSelected
+                  ? const Color(0xFFFFD700)
+                  : Colors.black.withOpacity(0.3),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected ? Colors.transparent : Colors.grey.shade700,
@@ -341,13 +359,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? const Color(0xFFFFD700) : Colors.grey.shade400,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          )
+          Text(label,
+              style: TextStyle(
+                  color: isSelected
+                      ? const Color(0xFFFFD700)
+                      : Colors.grey.shade400,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal))
         ],
       ),
     );
@@ -389,3 +406,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+

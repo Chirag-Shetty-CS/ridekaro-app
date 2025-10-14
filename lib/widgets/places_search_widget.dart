@@ -24,7 +24,9 @@ class _PlacesSearchWidgetState extends State<PlacesSearchWidget> {
   List<Prediction> _predictions = [];
   Timer? _debounce;
   bool _isLoading = false;
-  String _sessionToken = const Uuid().v4(); // Generate a unique session token
+  // Session tokens are recommended by Google to group autocomplete requests
+  // for billing purposes. A new token should be generated for each session.
+  String _sessionToken = const Uuid().v4();
 
   @override
   void initState() {
@@ -39,75 +41,80 @@ class _PlacesSearchWidgetState extends State<PlacesSearchWidget> {
     super.dispose();
   }
 
-  // Use a debounce to prevent excessive API calls
+  // Use a "debounce" to prevent making an API call on every single keystroke.
+  // This waits for the user to stop typing for a moment before searching.
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
       if (query.isNotEmpty) {
         _searchPlaces(query);
       } else {
-        setState(() => _predictions = []);
+        if (mounted) setState(() => _predictions = []);
       }
     });
   }
 
   Future<void> _searchPlaces(String query) async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final response = await _places.autocomplete(
         query,
         sessionToken: _sessionToken,
-        components: [Component(Component.country, 'in')], // Restrict to India
+        components: [Component(Component.country, 'in')], // Restrict search to India
         language: 'en',
       );
 
-      if (response.isOkay) {
+      if (mounted && response.isOkay) {
         setState(() {
           _predictions = response.predictions;
         });
       } else {
-        setState(() => _predictions = []);
+        if (mounted) setState(() => _predictions = []);
         debugPrint("Places API Error: ${response.errorMessage}");
       }
     } catch (e) {
       debugPrint("Error searching places: $e");
-      setState(() => _predictions = []);
+      if (mounted) setState(() => _predictions = []);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _getPlaceDetails(String placeId) async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final response = await _places.getDetailsByPlaceId(
         placeId,
         sessionToken: _sessionToken,
-        fields: [ "formatted_address", "geometry" ],
+        fields: ["formatted_address", "geometry"],
       );
 
-      if (response.isOkay) {
+      if (mounted && response.isOkay) {
         final result = response.result;
         final address = result.formattedAddress ?? 'Unknown Address';
         final lat = result.geometry?.location.lat;
         final lng = result.geometry?.location.lng;
 
         if (lat != null && lng != null) {
+          // This is the callback that sends the data back to home_screen.dart
           widget.onPlaceSelected(address, LatLng(lat, lng));
         }
-        // Regenerate session token after a successful selection
-        setState(() => _sessionToken = const Uuid().v4());
+        // A new session begins after a place is selected.
+        if (mounted) setState(() => _sessionToken = const Uuid().v4());
       }
     } catch (e) {
       debugPrint("Error getting place details: $e");
     } finally {
-      setState(() => _isLoading = false);
+      // Don't set isLoading to false here, as the widget will be disposed.
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      // Make the sheet take up most of the screen for a better search experience
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: const BoxDecoration(
         color: Color(0xFF2E2E2E),
@@ -120,7 +127,7 @@ class _PlacesSearchWidgetState extends State<PlacesSearchWidget> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // Handle for the bottom sheet
+                // Draggable handle for the bottom sheet
                 Container(
                   width: 40,
                   height: 4,
@@ -165,7 +172,6 @@ class _PlacesSearchWidgetState extends State<PlacesSearchWidget> {
             ),
           ),
 
-          // Divider
           const Divider(color: Colors.white24, height: 1),
 
           // Results List
