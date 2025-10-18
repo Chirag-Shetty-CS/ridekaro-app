@@ -1,16 +1,11 @@
 # ridekaro
 
-A ride sharing app
+An Easy to Use, Multilingual Ride hailing app
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+This project's aim is to study various APIs and how they are implemented.
+The other aim is to increase proficiency with flutter.
+Also, it is my project for 5th Semester.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+link to my github repository: https://github.com/Chirag-Shetty-CS/ridekaro-app
